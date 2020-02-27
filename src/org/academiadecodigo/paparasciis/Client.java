@@ -11,7 +11,7 @@ public class Client {
     private BufferedWriter serverOut;
     private Scanner scanner;
     private Socket socket;
-    public static final int PORT = 55556;
+
 
     public static void main(String[] args) {
 
@@ -30,7 +30,7 @@ public class Client {
         System.out.println("Trying to establish a connection, please wait...");
 
         try {
-            socket = new Socket(address, PORT);
+            socket = new Socket(address, Server.PORT);
             System.out.println("Connected to: " + socket);
 
             streamsInit();
