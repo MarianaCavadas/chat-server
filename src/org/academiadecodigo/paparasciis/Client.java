@@ -2,6 +2,7 @@ package org.academiadecodigo.paparasciis;
 
 import javax.xml.bind.annotation.XmlType;
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Scanner;
 
@@ -11,11 +12,13 @@ public class Client {
     private BufferedWriter serverOut;
     private Scanner scanner;
     private Socket socket;
+    private String alias;
 
 
     public static void main(String[] args) {
 
-        Client client = new Client("127.0.0.1");
+
+        Client client = new Client();
 
         Thread thread = new Thread(client.new ClientRunnable());
 
@@ -25,15 +28,19 @@ public class Client {
 
     }
 
-    public Client(String address) {
+    public Client() {
 
         System.out.println("Trying to establish a connection, please wait...");
 
         try {
-            socket = new Socket(address, Server.PORT);
+
+            socket = new Socket(InetAddress.getByName("127.0.0.1"), Server.PORT);
             System.out.println("Connected to: " + socket);
 
             streamsInit();
+
+            alias = getAlias();
+            serverOut.write(alias);
 
             System.out.println("You may start a conversation.");
 
@@ -45,22 +52,25 @@ public class Client {
 
     private void start() {
 
-        while (true) {
+        while (!socket.isClosed()) {
 
             try {
+
                 String messageReceived = serverIn.readLine();
 
-                if(messageReceived == null) {
-                    System.out.println("...");
+                if (messageReceived == null) {
+                    close();
                     break;
                 }
 
                 System.out.println(messageReceived);
 
             } catch (IOException e) {
+                close();
                 e.printStackTrace();
             }
         }
+
     }
 
 
@@ -76,24 +86,89 @@ public class Client {
         }
     }
 
+    private void close() {
+
+        try {
+            System.out.println("Connection closed");
+            System.exit(1);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+        } finally {
+            closeStream(serverIn);
+            closeStream(serverOut);
+            closeStream(scanner);
+            closeStream(socket);
+        }
+    }
+
+    private String getAlias() {
+        System.out.println("Alias? ");
+        return scanner.nextLine();
+    }
+
+    private void closeStream(Closeable closeable) {
+        if (closeable == null) {
+            return;
+        }
+        try {
+            closeable.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     private class ClientRunnable implements Runnable {
 
         @Override
         public void run() {
 
-            while (true) {
+            while (!socket.isClosed()) {
 
                 String message = scanner.nextLine();
 
+                String command = message.split(" ")[0];
+
+                commands(command);
+
+                if (command.charAt(0) == '/') {
+                    continue;
+                }
+
                 try {
-                    serverOut.write(message);
+
+                    serverOut.write(alias + ": " + message);
                     serverOut.newLine();
                     serverOut.flush();
 
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+            }
+
+        }
+
+        private void commands(String command) {
+
+            if (command == null || command.charAt(0) != '/') {
+                return;
+            }
+
+            switch (command) {
+                case "/quit":
+                    close();
+                    break;
+                case "/alias":
+                    alias = getAlias();
+                    System.out.println("Your new alias is: " + alias);
+                    break;
+                default:
+                    System.out.println("Not a known command, please try again.");
+                    break;
+
             }
         }
     }
