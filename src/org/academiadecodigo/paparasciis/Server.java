@@ -6,12 +6,13 @@ import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Server {
 
     private ServerSocket serverSocket;
     private Socket socket;
-    private Map<String, ServerWorker> workers;
+    private Map<Integer, ServerWorker> workers;
     static final int PORT = 50;
 
     public static void main(String[] args) {
@@ -33,7 +34,7 @@ public class Server {
 
             System.out.println("Waiting for a client connection");
 
-            workers = Collections.synchronizedMap(new HashMap<String, ServerWorker>());
+            workers = Collections.synchronizedMap(new HashMap<>());
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -41,6 +42,8 @@ public class Server {
     }
 
     private void start() {
+
+        AtomicInteger id = new AtomicInteger();
 
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
@@ -50,9 +53,13 @@ public class Server {
 
                 ServerWorker worker = new ServerWorker(serverSocket.accept());
 
+                id.getAndIncrement();
+
                 System.out.println("Client accepted");
 
-                workers.put(worker.aliasClient, worker);
+                System.out.println("Client " + id);
+
+                workers.put(id.get(), worker);
 
                 pool.submit(worker);
 
@@ -65,6 +72,7 @@ public class Server {
 
     private synchronized void broadcast(String message) {
 
+
         for (ServerWorker w : workers.values()) {
 
             w.send(message);
@@ -73,12 +81,14 @@ public class Server {
     }
 
 
+
+
     private class ServerWorker implements Runnable {
 
         private BufferedWriter clientOut;
         private BufferedReader clientIn;
         private Socket socket;
-        private String aliasClient;
+        //private String aliasClient;
 
 
         private ServerWorker(Socket socket) {
@@ -87,13 +97,6 @@ public class Server {
 
             initStreams();
 
-            try {
-                aliasClient = clientIn.readLine();
-                System.out.println(aliasClient);
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
         }
 
         private void initStreams() {
@@ -117,7 +120,28 @@ public class Server {
             }
         }
 
+        /*private String getAliasClient() {
+
+            try {
+                aliasClient = clientIn.readLine();
+                System.out.println(aliasClient);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            return aliasClient;
+        }*/
+
         private void send(String message) {
+
+           /* String command = message.split(" ")[0];
+
+            commands(command);
+
+            if (command.charAt(0) == '/') {
+                return;
+            }*/
 
             try {
 
@@ -146,15 +170,49 @@ public class Server {
             return message;
         }
 
-        private void closeUp() {
 
+        private void commands(String command) {
+
+            if (command == null || command.charAt(0) != '/') {
+                return;
+            }
+
+            switch (command) {
+
+                case "/alias":
+
+                default:
+                    System.out.println("Not a known command, please try again.");
+                    break;
+
+            }
+        }
+
+        private void closeStream(Closeable closeable) {
+
+            if (closeable == null) {
+                return;
+            }
             try {
-                clientOut.close();
-                clientIn.close();
-                socket.close();
+                closeable.close();
 
             } catch (IOException e) {
                 e.printStackTrace();
+            }
+        }
+
+        private void closeUp() {
+
+            try {
+                System.out.println("Connection closed");
+
+            } catch (Exception e) {
+                e.printStackTrace();
+
+            } finally {
+                closeStream(clientIn);
+                closeStream(clientOut);
+                closeStream(socket);
             }
 
         }

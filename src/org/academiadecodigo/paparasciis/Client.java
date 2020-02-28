@@ -40,9 +40,8 @@ public class Client {
             streamsInit();
 
             alias = getAlias();
-            serverOut.write(alias);
 
-            System.out.println("You may start a conversation.");
+            System.out.println("You may start a conversation.\n");
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -130,12 +129,14 @@ public class Client {
 
                 String message = scanner.nextLine();
 
-                String command = message.split(" ")[0];
+                if (message.split(" ")[0].equals("/quit")) {
+                    close();
+                    return;
+                }
 
-                commands(command);
-
-                if (command.charAt(0) == '/') {
-                    continue;
+                if (message.split(" ") [0].equals("/alias")) {
+                    alias = getAlias();
+                    return;
                 }
 
                 try {
@@ -151,26 +152,6 @@ public class Client {
 
         }
 
-        private void commands(String command) {
-
-            if (command == null || command.charAt(0) != '/') {
-                return;
-            }
-
-            switch (command) {
-                case "/quit":
-                    close();
-                    break;
-                case "/alias":
-                    alias = getAlias();
-                    System.out.println("Your new alias is: " + alias);
-                    break;
-                default:
-                    System.out.println("Not a known command, please try again.");
-                    break;
-
-            }
-        }
     }
 
 }
