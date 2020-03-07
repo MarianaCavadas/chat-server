@@ -45,6 +45,7 @@ public class Client {
 
         } catch (IOException e) {
             e.printStackTrace();
+            System.exit(1);
         }
 
     }
@@ -72,7 +73,6 @@ public class Client {
 
     }
 
-
     private void streamsInit() {
 
         try {
@@ -88,8 +88,8 @@ public class Client {
     private void close() {
 
         try {
-            System.out.println("Connection closed");
-            System.exit(1);
+            System.out.println("Connection closed, exiting...");
+            System.exit(0);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -131,12 +131,7 @@ public class Client {
 
                 if (message.split(" ")[0].equals("/quit")) {
                     close();
-                    return;
-                }
-
-                if (message.split(" ") [0].equals("/alias")) {
-                    alias = getAlias();
-                    return;
+                    break;
                 }
 
                 try {

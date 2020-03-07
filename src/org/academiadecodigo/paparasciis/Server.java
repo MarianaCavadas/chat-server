@@ -11,9 +11,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Server {
 
     private ServerSocket serverSocket;
-    private Socket socket;
-    private Map<Integer, ServerWorker> workers;
+    //private Socket socket;
+    private Map<String, ServerWorker> workers;
     static final int PORT = 50;
+    public final String LIST_CMD = "/LIST";
 
     public static void main(String[] args) {
 
@@ -55,11 +56,11 @@ public class Server {
 
                 id.getAndIncrement();
 
-                System.out.println("Client accepted");
+                worker.aliasClient = "User " + id.get();
 
-                System.out.println("Client " + id);
+                System.out.println(worker.aliasClient + " accepted");
 
-                workers.put(id.get(), worker);
+                workers.put(worker.aliasClient, worker);
 
                 pool.submit(worker);
 
@@ -87,8 +88,8 @@ public class Server {
 
         private BufferedWriter clientOut;
         private BufferedReader clientIn;
-        private Socket socket;
-        //private String aliasClient;
+        final private Socket socket;
+        private String aliasClient;
 
 
         private ServerWorker(Socket socket) {
@@ -120,18 +121,10 @@ public class Server {
             }
         }
 
-        /*private String getAliasClient() {
+        private void setAliasClient(String aliasClient) {
 
-            try {
-                aliasClient = clientIn.readLine();
-                System.out.println(aliasClient);
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            return aliasClient;
-        }*/
+            this.aliasClient = aliasClient;
+        }
 
         private void send(String message) {
 
@@ -162,6 +155,13 @@ public class Server {
 
             try {
                 message = clientIn.readLine();
+
+                if(message == null) {
+
+                    clientIn.close();
+                    socket.close();
+                    return aliasClient + " closed, exiting...";
+                }
 
             } catch (IOException e) {
                 e.printStackTrace();
